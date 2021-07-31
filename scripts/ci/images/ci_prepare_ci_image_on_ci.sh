@@ -33,20 +33,9 @@ function build_ci_image_on_ci() {
 
         # Tries to wait for the images indefinitely
         # skips further image checks - since we already have the target image
-
-        local python_tag_suffix=""
-        if [[ ${GITHUB_REGISTRY_PULL_IMAGE_TAG} != "latest" ]]; then
-            python_tag_suffix="-${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
-        fi
-        # first we pull base python image. We will need it to re-push it after main build
-        # Becoming the new "latest" image for other builds
-        build_images::wait_for_image_tag "${AIRFLOW_PYTHON_BASE_IMAGE}" \
-            "${python_tag_suffix}"
-
         # And then the actual image
         build_images::wait_for_image_tag "${AIRFLOW_CI_IMAGE}" \
             ":${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
-
         md5sum::update_all_md5_with_group
     else
         build_images::rebuild_ci_image_if_needed

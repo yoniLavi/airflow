@@ -251,7 +251,6 @@ EOF
 # Retrieves information about build cache hash random file from the local image
 #
 function build_images::get_local_build_cache_hash() {
-
     set +e
     # Remove the container just in case
     docker_v rm --force "local-airflow-ci-container" 2>/dev/null >/dev/null
@@ -262,6 +261,7 @@ function build_images::get_local_build_cache_hash() {
         LOCAL_MANIFEST_IMAGE_UNAVAILABLE="true"
         export LOCAL_MANIFEST_IMAGE_UNAVAILABLE
         touch "${LOCAL_IMAGE_BUILD_CACHE_HASH_FILE}"
+        set -e
         return
 
     fi
@@ -296,6 +296,7 @@ function build_images::get_remote_image_build_cache_hash() {
         REMOTE_DOCKER_REGISTRY_UNREACHABLE="true"
         export REMOTE_DOCKER_REGISTRY_UNREACHABLE
         touch "${REMOTE_IMAGE_BUILD_CACHE_HASH_FILE}"
+        set -e
         return
     fi
     set -e
@@ -358,49 +359,44 @@ function build_images::get_github_container_registry_image_prefix() {
     echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]'
 }
 
-function build_images::get_docker_image_names() {
-    # python image version to use
-    export PYTHON_BASE_IMAGE_VERSION=${PYTHON_BASE_IMAGE_VERSION:=${PYTHON_MAJOR_MINOR_VERSION}}
-
+function build_images::get_docker_cache_image_names() {
     # Python base image to use
-    export PYTHON_BASE_IMAGE="python:${PYTHON_BASE_IMAGE_VERSION}-slim-buster"
+    export PYTHON_BASE_IMAGE="python:${PYTHON_MAJOR_MINOR_VERSION}-slim-buster"
 
     local image_name
     image_name="${GITHUB_REGISTRY}/$(build_images::get_github_container_registry_image_prefix)"
 
-    # CI image base tag
-    export AIRFLOW_CI_BASE_TAG="${BRANCH_NAME}-python${PYTHON_MAJOR_MINOR_VERSION}-ci"
+    # Example:
+    #  ghcr.io/apache/airflow/main/python:3.8-slim-buster
+    export AIRFLOW_PYTHON_BASE_IMAGE="${image_name}/${BRANCH_NAME}/python:${PYTHON_MAJOR_MINOR_VERSION}-slim-buster"
 
     # Example:
-    #  ghcr.io/apache/airflow-main-python3.8-ci-v2
-    export AIRFLOW_CI_IMAGE="${image_name}-${AIRFLOW_CI_BASE_TAG}${GITHUB_REGISTRY_IMAGE_SUFFIX}"
-
-    export AIRFLOW_CI_LOCAL_MANIFEST_IMAGE="local-airflow-ci-manifest:${AIRFLOW_CI_BASE_TAG}"
+    #  ghcr.io/apache/airflow/main/ci/python3.8
+    export AIRFLOW_CI_IMAGE="${image_name}/${BRANCH_NAME}/ci/python${PYTHON_MAJOR_MINOR_VERSION}"
 
     # Example:
-    #  ghcr.io/apache/airflow-main-python3.8-ci-v2-manifest
-    export AIRFLOW_CI_REMOTE_MANIFEST_IMAGE="${image_name}-${AIRFLOW_CI_BASE_TAG}${GITHUB_REGISTRY_IMAGE_SUFFIX}-manifest"
+    #  local-airflow-ci-manifest/main/python3.8
+    export AIRFLOW_CI_LOCAL_MANIFEST_IMAGE="local-airflow-ci-manifest/${BRANCH_NAME}/python${PYTHON_MAJOR_MINOR_VERSION}"
+
+    # Example:
+    #  ghcr.io/apache/airflow/main/ci-manifest/python3.8
+    export AIRFLOW_CI_REMOTE_MANIFEST_IMAGE="${image_name}/${BRANCH_NAME}/ci-manifest/python${PYTHON_MAJOR_MINOR_VERSION}"
 
     # File that is touched when the CI image is built for the first time locally
     export BUILT_CI_IMAGE_FLAG_FILE="${BUILD_CACHE_DIR}/${BRANCH_NAME}/.built_${PYTHON_MAJOR_MINOR_VERSION}"
 
-    # PROD image to build
-    export AIRFLOW_PROD_BASE_TAG="${BRANCH_NAME}-python${PYTHON_MAJOR_MINOR_VERSION}"
+    # Example:
+    #  ghcr.io/apache/airflow/main/prod/python3.8
+    export AIRFLOW_PROD_IMAGE="${image_name}/${BRANCH_NAME}/prod/python${PYTHON_MAJOR_MINOR_VERSION}"
 
     # Example:
-    #  ghcr.io/apache/airflow-v2-1-test-python-v2:3.6-slim-buster
-    export AIRFLOW_PROD_IMAGE="${image_name}-${AIRFLOW_PROD_BASE_TAG}${GITHUB_REGISTRY_IMAGE_SUFFIX}"
+    #   ghcr.io/apache/airflow/main/prod-build/python3.8
+    export AIRFLOW_PROD_BUILD_IMAGE="${image_name}/${BRANCH_NAME}/prod-build/python${PYTHON_MAJOR_MINOR_VERSION}"
 
-    # PROD Kubernetes image to build
-    export AIRFLOW_PROD_IMAGE_KUBERNETES="${AIRFLOW_PROD_IMAGE}-kubernetes"
+    # Kubernetes image to build
+    #  ghcr.io/apache/airflow/main/kubernetes/python3.8
+    export AIRFLOW_IMAGE_KUBERNETES="${image_name}/${BRANCH_NAME}/kubernetes/python${PYTHON_MAJOR_MINOR_VERSION}"
 
-    # Example:
-    #   ghcr.io/apache/airflow-main-python3.6-build-v2
-    export AIRFLOW_PROD_BUILD_IMAGE="${image_name}-${AIRFLOW_PROD_BASE_TAG}-build${GITHUB_REGISTRY_IMAGE_SUFFIX}"
-
-    # Example:
-    #  ghcr.io/apache/airflow-python-v2:3.6-slim-buster
-    export AIRFLOW_PYTHON_BASE_IMAGE="${image_name}-python${GITHUB_REGISTRY_IMAGE_SUFFIX}:${PYTHON_BASE_IMAGE_VERSION}-slim-buster"
 
 
 }
@@ -927,7 +923,6 @@ function build_images::determine_docker_cache_strategy() {
             export DOCKER_CACHE="pulled"
         fi
     fi
-    readonly DOCKER_CACHE
     verbosity::print_info
     verbosity::print_info "Using ${DOCKER_CACHE} cache strategy for the build."
     verbosity::print_info
