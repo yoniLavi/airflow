@@ -4,7 +4,6 @@ AgentKey
 Airbnb
 Airbyte
 AirflowException
-Alibaba
 Alphasort
 Analytics
 AnalyzeEntitiesResponse
@@ -242,7 +241,6 @@ Nones
 NotFound
 Nullable
 OAuth
-OSS
 Oauth
 Oauthlib
 Okta
@@ -402,7 +400,6 @@ airbyte
 airflowignore
 ajax
 alertPolicies
-alibaba
 allAuthenticatedUsers
 allUsers
 allowinsert
@@ -1009,7 +1006,6 @@ orchestrator
 orgtbl
 orm
 os
-oss
 ot
 overridable
 oversubscription
