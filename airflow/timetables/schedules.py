@@ -88,7 +88,7 @@ class CronSchedule(Schedule):
     """Schedule things from a cron expression.
 
     The implementation extends on croniter to add timezone awareness. This is
-    because crontier works only with naive timestamps, and cannot consider DST
+    because croniter works only with naive timestamps, and cannot consider DST
     when determining the next/previous time.
     """
 
